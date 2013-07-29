@@ -1863,6 +1863,11 @@ let
       xorg.fontbhlucidatypewriter75dpi ];
   };
 
+  realvnc = callPackage ../tools/admin/realvnc {
+    fontDirectories = [ xorg.fontadobe75dpi xorg.fontmiscmisc xorg.fontcursormisc
+      xorg.fontbhlucidatypewriter75dpi ];
+  };
+
   time = callPackage ../tools/misc/time { };
 
   tkabber = callPackage ../applications/networking/instant-messengers/tkabber { };
