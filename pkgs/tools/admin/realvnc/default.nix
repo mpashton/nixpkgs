@@ -50,7 +50,7 @@ stdenv.mkDerivation rec {
     mkdir -p $out/bin
     for i in $binaries ; do
       cp $i $out/bin
-      patchelf --set-interpreter ${stdenv.glibc}/lib/${interpreter} --set-rpath ${libX11}/lib:${libXext}/lib:${libSM}/lib:${stdenv.gcc.gcc}/lib64:${stdenv.gcc.gcc}/lib $out/bin/$i
+      patchelf --set-interpreter ${stdenv.glibc}/lib/${interpreter} --set-rpath ${libX11}/lib:${libXext}/lib:${libSM}/lib:${libXtst}/lib:${stdenv.gcc.gcc}/lib64:${stdenv.gcc.gcc}/lib $out/bin/$i
     done
 
     mkdir -p $out/lib/vnc
