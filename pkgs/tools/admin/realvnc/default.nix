@@ -56,7 +56,9 @@ stdenv.mkDerivation rec {
   '';
 
   installPhase = ''
-    binaries="vncaddrbook vncchat vnclicense vnclicensewiz vncpasswd vncpipehelper vncserverui vncserver-virtual vncserver-virtuald vncserver-x11 vncserver-x11-core vncserver-x11-serviced vncviewer Xvnc Xvnc-core"
+    wrapped_binaries="vncaddrbook vncchat vnclicense vnclicensewiz vncpasswd vncpipehelper vncserverui vncserver-virtuald vncserver-x11 vncserver-x11-core vncserver-x11-serviced vncviewer Xvnc Xvnc-core"
+    # vncserver-virtual runs xauth, which crashes with our preload.c.  seems to work without preload however.
+    binaries="$wrapped_binaries vncserver-virtual"
 
     mkdir -p $out/bin
     for i in $binaries ; do
@@ -96,7 +98,7 @@ stdenv.mkDerivation rec {
       done
     done
 
-    for i in $binaries ; do
+    for i in $wrapped_binaries ; do
       wrapProgram $out/bin/$i --set LD_PRELOAD $preload
     done
   '';
