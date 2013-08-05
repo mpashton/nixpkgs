@@ -143,27 +143,3 @@ int open64(const char *path, int flags, ...)
         
         return err;
 }
-
-#if 0
-int __xstat64(int ver, const char *path, struct stat64 *st)
-{
-        char buf[PATH_MAX];
-        int (*___xstat64) (int ver, const char *, struct stat64 *) = dlsym(RTLD_NEXT, "__xstat64");
-        int err = ___xstat64(ver, rewrite(path, buf), st);
-
-        
-}
-
-int access(const char *path, int mode)
-{
-        char buf[PATH_MAX];
-        int (*_access) (const char *path, int mode) = dlsym(RTLD_NEXT, "access");
-        int err = _access(rewrite(path, buf), mode);
-
-	if (path != pathname && getenv("PRELOAD_DEBUG")) {
-		fprintf(stderr, "preload_debug: access(\"%s\", \"%s\") => \"%s\": err=%d\n", pathname, mode, path, err);
-	}
-
-        return err;
-}
-#endif
