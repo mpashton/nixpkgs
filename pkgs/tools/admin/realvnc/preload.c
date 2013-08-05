@@ -1,3 +1,9 @@
+/* preload.c for RealVNC
+
+Most of this code was taken from pkgs/tools/misc/saleae-logic and the various aangifte packages, particularly aangifte-2012.
+
+Author: Michael Ashton <data@gtf.org>, 2013-08
+*/
 
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -15,30 +21,35 @@
 
 typedef FILE *(*fopen_func_t)(const char *path, const char *mode);
 
-/*
-
-/usr/share/vnc -> $OUT/share/vnc
-/usr/X11R6/lib -> ?
-/etc/vnc -> $OUT/etc/realvnc
-
-*/
-
-static const char *patterns[] = { 
-        "/usr/share/vnc", OUT "/share/realvnc",
-        "/etc/vnc/get_primary_ip4", OUT "/bin/get_primary_ip4",
-        "/etc/vnc", "/home/data/.vnc",
-        "/usr/X11R6/lib/X11", OUT "/share/realvnc/X11",
-        0, 0 };
-
 const char* rewrite(const char* path, char* buf)
 {
+        /* Redirection table: A list of pairs of strings.  If the first string
+         * in each pair matches all of the first characters in the path under
+         * test, they are replaced with the characters in the second string.
+         * OUT is the Nix output directory.  The table is terminated with zeroes. */
+
+        static const char *patterns[] = { 
+                "/usr/share/vnc", OUT "/share/realvnc",
+                "/etc/vnc/get_primary_ip4", OUT "/bin/get_primary_ip4",
+                // this is for the license key, which is written by vnclicense.  there is probably a better way to do this
+                "/etc/vnc", "~/.vnc",
+                "/usr/X11R6/lib/X11", OUT "/share/realvnc/X11",
+                0, 0 };
+
         int l;
         const char** p;
         for (p = patterns; *p; p += 2) {
                 //fprintf(stderr, "compare %s to %s\n", path, *p);
                 l = strnlen(*p, PATH_MAX);
                 if (strncmp(path, *p, l - 1) == 0) {
-                        if (snprintf(buf, PATH_MAX, "%s%s", *(p+1), path + l) >= PATH_MAX) {
+                        if (**(p+1) == '~') {
+                                // prefix with home directory
+                                //!!!TODO is there a better way to get HOME?
+                                if (snprintf(buf, PATH_MAX, "%s%s%s", getenv("HOME"), *(p+1) + 1, path + l) >= PATH_MAX) {
+                                        abort();
+                                }
+                        }
+                        else if (snprintf(buf, PATH_MAX, "%s%s", *(p+1), path + l) >= PATH_MAX) {
                                 //fprintf(stderr, "abort!\n");
                                 abort();
                         }
