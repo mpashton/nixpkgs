@@ -1,4 +1,4 @@
-{ stdenv, requireFile, patchelf
+{ stdenv, requireFile, patchelf, makeWrapper
 , libX11, libXext, libICE, libXtst, libXi, libSM, xorgserver
 , cups
 , xkbcomp, xkeyboard_config
@@ -7,6 +7,7 @@
 , fontsproto, videoproto, compositeproto, scrnsaverproto, resourceproto
 , libxkbfile, libXfont, libXft, libXinerama
 , xineramaproto, libXcursor
+, gawk, nettools, coreutils
 }:
 
 let vncversion = "5.0.5";
@@ -39,10 +40,20 @@ stdenv.mkDerivation rec {
              else "1272x2rpp6fpn7rzqdm6dqhhxasbaxnbpa2c4n7zmcc78anqf1y1";
   };
 
-  phases = "unpackPhase installPhase";
-  buildInputs = [ patchelf ];
+  phases = "unpackPhase patchPhase installPhase";
+  buildInputs = [ patchelf makeWrapper fontDirectories ];
   dontStrip = true;
   dontPatchElf = true;
+
+  inherit fontDirectories;
+
+  postPatch = ''
+    patchShebangs "."
+    substituteInPlace get_primary_ip4 --replace "awk=/usr/bin/awk" awk=${gawk}/bin/awk
+    substituteInPlace get_primary_ip4 --replace "ifconfig=/sbin/ifconfig" ifconfig=${nettools}/bin/ifconfig
+    substituteInPlace get_primary_ip4 --replace "netstat=/bin/netstat" netstat=${nettools}/bin/netstat
+    substituteInPlace get_primary_ip4 --replace "tr=/usr/bin/tr" tr=${coreutils}/bin/tr
+  '';
 
   installPhase = ''
     binaries="vncaddrbook vncchat vnclicense vnclicensewiz vncpasswd vncpipehelper vncserverui vncserver-virtual vncserver-virtuald vncserver-x11 vncserver-x11-core vncserver-x11-serviced vncviewer Xvnc Xvnc-core"
@@ -53,8 +64,8 @@ stdenv.mkDerivation rec {
       patchelf --set-interpreter ${stdenv.glibc}/lib/${interpreter} --set-rpath ${libX11}/lib:${libXext}/lib:${libSM}/lib:${libXtst}/lib:${stdenv.gcc.gcc}/lib64:${stdenv.gcc.gcc}/lib $out/bin/$i
     done
 
-    mkdir -p $out/lib/vnc
-    cp vncelevate get_primary_ip4 $out/lib/vnc
+    # these scripts are searched in the bin directory first
+    cp vncelevate get_primary_ip4 $out/bin
 
     manpath=$out/share/man/man1
     mkdir -p $manpath
@@ -62,11 +73,32 @@ stdenv.mkDerivation rec {
       cp $i $manpath/$(basename -s .man $i).1
     done
 
-    mkdir -p $out/share/vnc
-    cp rgb.txt $out/share/vnc
+    mkdir -p $out/share/realvnc
+    cp rgb.txt $out/share/realvnc
 
-    mkdir -p $out/share/vnc/fonts
-    cp fonts/* $out/share/vnc/fonts
+    mkdir -p $out/share/realvnc/fonts
+    cp fonts/* $out/share/realvnc/fonts
+
+    preload=$out/libexec/realvnc/libpreload.so
+    mkdir -p $out/libexec/realvnc
+    gcc -shared ${./preload.c} -o $preload -ldl -DOUT=\"$out\" -DLIBX11=\"${libX11}/lib\" -fPIC
+
+    # this directory contains links to the X11 files which realvnc expects to be in /usr/X11R6/lib/X11
+    x11dir=$out/share/realvnc/X11
+    mkdir -p $x11dir
+    ln -s ${xkeyboard_config}/etc/X11/xkb $x11dir/xkb    
+    mkdir -p $x11dir/fonts
+    echo $fontDirectories
+
+    for i in $fontDirectories ; do
+      for j in $(ls $i/lib/X11/fonts) ; do
+        ln -s $i/lib/X11/fonts/$j $x11dir/fonts/$j || true
+      done
+    done
+
+    for i in $binaries ; do
+      wrapProgram $out/bin/$i --set LD_PRELOAD $preload
+    done
   '';
 
   meta = {
