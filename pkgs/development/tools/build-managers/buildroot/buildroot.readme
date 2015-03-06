@@ -1,0 +1,18 @@
+
+Buildroot is a tool for building bootable root filesystems for
+embedded Linux installations.  It is intended for single-function
+systems which are (potentially) upgradable by the user, but not
+reconfigurable.
+
+Typically, a Buildroot instance is made by unpacking the Buildroot
+distribution and building directly within it.  This package therefore
+includes a Buildroot tarball and a command, buildroot-init, which
+makes a new Buildroot directory.
+
+This package ensures that all dependencies needed for a basic
+Buildroot configuration are installed.  It does not attempt to provide
+all possible dependencies, as Buildroot has many packages of its own.
+The user may wish to provide a Nix expression or script which installs
+the dependencies needed for building a Buildroot instance.
+
+[1] http://www.buildroot.net/

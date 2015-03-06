@@ -4716,6 +4716,8 @@ let
     inherit (pythonPackages) twisted;
   };
 
+  buildroot = callPackage ../development/tools/build-managers/buildroot { };
+
   byacc = callPackage ../development/tools/parsing/byacc { };
 
   cargoSnapshot = callPackage ../development/tools/build-managers/cargo/snapshot.nix { };
