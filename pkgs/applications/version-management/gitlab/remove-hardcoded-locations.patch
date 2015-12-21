@@ -1,15 +1,16 @@
-diff --git a/config/environments/production.rb b/config/environments/production.rb
-index 3316ece..c34dec0 100644
---- a/config/environments/production.rb
-+++ b/config/environments/production.rb
-@@ -67,10 +67,10 @@ Gitlab::Application.configure do
+diff -ur -x '*~' gitlab-ce-v8.2.3-src/config/environments/production.rb gitlab-ce-v8.2.3-src-patched/config/environments/production.rb
+--- gitlab-ce-v8.2.3-src/config/environments/production.rb	2015-12-21 15:39:39.989950374 +0000
++++ gitlab-ce-v8.2.3-src-patched/config/environments/production.rb	2015-12-21 14:50:51.209545592 +0000
+@@ -66,11 +66,11 @@
+   config.active_support.deprecation = :notify
  
    config.action_mailer.delivery_method = :sendmail
-   # Defaults to:
+-  # Defaults to:
 -  # # config.action_mailer.sendmail_settings = {
 -  # #   location: '/usr/sbin/sendmail',
 -  # #   arguments: '-i -t'
 -  # # }
++
 +  config.action_mailer.sendmail_settings = {
 +    location: '/var/setuid-wrappers/sendmail',
 +    arguments: '-i -t'
@@ -17,22 +18,21 @@ index 3316ece..c34dec0 100644
    config.action_mailer.perform_deliveries = true
    config.action_mailer.raise_delivery_errors = true
  
-diff --git a/config/gitlab.yml.example b/config/gitlab.yml.example
-index 15930fc..bdb423c 100644
---- a/config/gitlab.yml.example
-+++ b/config/gitlab.yml.example
-@@ -29,8 +29,8 @@ production: &base
+diff -ur -x '*~' gitlab-ce-v8.2.3-src/config/gitlab.yml.example gitlab-ce-v8.2.3-src-patched/config/gitlab.yml.example
+--- gitlab-ce-v8.2.3-src/config/gitlab.yml.example	2015-12-21 15:39:39.988950374 +0000
++++ gitlab-ce-v8.2.3-src-patched/config/gitlab.yml.example	2015-12-21 14:57:38.697535355 +0000
+@@ -29,8 +29,8 @@
    ## GitLab settings
    gitlab:
      ## Web server settings (note: host is the FQDN, do not include http://)
 -    host: localhost
 -    port: 80 # Set to 443 if using HTTPS, see installation.md#using-https for additional HTTPS configuration details
 +    host: <%= ENV['GITLAB_HOST'] || 'localhost' %>
-+    port: <%= ENV['GITLAB_PORT'] || 80 %>
++    port: <%= ENV['GITLAB_PORT'] || 80 %> # Set to 443 if using HTTPS, see installation.md#using-https for additional HTTPS configuration details
      https: false # Set to true if using HTTPS, see installation.md#using-https for additional HTTPS configuration details
  
      # Uncommment this line below if your ssh host is different from HTTP/HTTPS one
-@@ -43,7 +43,7 @@ production: &base
+@@ -43,7 +43,7 @@
      # relative_url_root: /gitlab
  
      # Uncomment and customize if you can't use the default user to run GitLab (default: 'git')
@@ -41,7 +41,7 @@ index 15930fc..bdb423c 100644
  
      ## Date & Time settings
      # Uncomment and customize if you want to change the default time zone of GitLab application.
-@@ -54,7 +54,7 @@ production: &base
+@@ -54,7 +54,7 @@
      # Uncomment and set to false if you need to disable email sending from GitLab (default: true)
      # email_enabled: true
      # Email address used in the "From" field in mails sent by GitLab
@@ -50,13 +50,12 @@ index 15930fc..bdb423c 100644
      email_display_name: GitLab
      email_reply_to: noreply@example.com
  
-@@ -298,12 +298,12 @@ production: &base
-   # GitLab Satellites
+@@ -339,11 +339,11 @@
+   # least. This setting is fed to 'rm -rf' in
+   # db/migrate/20151023144219_remove_satellites.rb
    satellites:
-     # Relative paths are relative to Rails.root (default: tmp/repo_satellites/)
 -    path: /home/git/gitlab-satellites/
 +    path: <%= ENV['GITLAB_SATELLITES_PATH'] %>
-     timeout: 30
  
    ## Backup settings
    backup:
@@ -65,7 +64,7 @@ index 15930fc..bdb423c 100644
      # archive_permissions: 0640 # Permissions for the resulting backup.tar file (default: 0600)
      # keep_time: 604800   # default: 0 (forever) (in seconds)
      # pg_schema: public     # default: nil, it means that all schemas will be backed up
-@@ -322,15 +322,15 @@ production: &base
+@@ -364,15 +364,15 @@
  
    ## GitLab Shell settings
    gitlab_shell:
@@ -85,7 +84,7 @@ index 15930fc..bdb423c 100644
  
      # Git over HTTP
      upload_pack: true
-@@ -343,7 +343,7 @@ production: &base
+@@ -385,7 +385,7 @@
    # CAUTION!
    # Use the default values unless you really know what you are doing
    git:
@@ -94,19 +93,18 @@ index 15930fc..bdb423c 100644
      # The next value is the maximum memory size grit can use
      # Given in number of bytes per git object (e.g. a commit)
      # This value can be increased if you have very large commits
-@@ -388,7 +388,7 @@ test:
-   gravatar:
-     enabled: true
+@@ -432,7 +432,7 @@
+   lfs:
+     enabled: false
    gitlab:
 -    host: localhost
 +    host: <%= ENV['GITLAB_HOST'] %>
      port: 80
  
      # When you run tests we clone and setup gitlab-shell
-diff --git a/lib/gitlab/app_logger.rb b/lib/gitlab/app_logger.rb
-index dddcb25..d61f10a 100644
---- a/lib/gitlab/app_logger.rb
-+++ b/lib/gitlab/app_logger.rb
+diff -ur -x '*~' gitlab-ce-v8.2.3-src/lib/gitlab/app_logger.rb gitlab-ce-v8.2.3-src-patched/lib/gitlab/app_logger.rb
+--- gitlab-ce-v8.2.3-src/lib/gitlab/app_logger.rb	2015-12-21 15:39:40.129950337 +0000
++++ gitlab-ce-v8.2.3-src-patched/lib/gitlab/app_logger.rb	2015-12-21 14:58:41.804533887 +0000
 @@ -1,7 +1,7 @@
  module Gitlab
    class AppLogger < Gitlab::Logger
